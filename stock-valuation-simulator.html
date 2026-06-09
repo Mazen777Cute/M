@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Stock Valuation Simulator | محاكي تقييم الأسهم</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;600&display=swap" rel="stylesheet" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --navy: #0A1628;
+    --navy-mid: #112240;
+    --navy-light: #1E3A5F;
+    --gold: #C9A84C;
+    --gold-light: #E8C97A;
+    --white: #F0F4FF;
+    --muted: #7A93B8;
+    --green: #2ECC71;
+    --red: #E74C3C;
+    --border: rgba(201,168,76,0.2);
+  }
+
+  body {
+    background: var(--navy);
+    font-family: 'IBM Plex Sans', sans-serif;
+    color: var(--white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* RTL mode */
+  html[dir="rtl"] body { font-family: 'IBM Plex Sans', 'Segoe UI', Tahoma, sans-serif; }
+
+  /* ── HEADER ── */
+  .header {
+    width: 100%;
+    max-width: 780px;
+    padding: 36px 24px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+  }
+
+  .brand {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .brand-label {
+    font-size: 10px;
+    letter-spacing: 3px;
+    color: var(--gold);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+
+  .brand-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--white);
+    line-height: 1.2;
+  }
+
+  .brand-sub {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .lang-btn {
+    background: var(--navy-mid);
+    border: 1px solid var(--border);
+    color: var(--gold);
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.2s, border-color 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .lang-btn:hover { background: var(--navy-light); border-color: var(--gold); }
+
+  /* ── MAIN CARD ── */
+  .card {
+    width: 100%;
+    max-width: 780px;
+    margin: 24px 24px 0;
+    background: var(--navy-mid);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 32px 32px 28px;
+  }
+
+  /* ── PRESET BUTTONS ── */
+  .presets-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+
+  .presets {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 28px;
+  }
+
+  .preset-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 7px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .preset-btn:hover, .preset-btn.active {
+    background: rgba(201,168,76,0.1);
+    border-color: var(--gold);
+    color: var(--gold);
+  }
+
+  /* ── GRID INPUTS ── */
+  .inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+
+  .field label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-weight: 500;
+  }
+
+  .field-hint {
+    font-size: 10px;
+    color: rgba(122,147,184,0.6);
+    margin-top: -2px;
+  }
+
+  .field input {
+    background: var(--navy);
+    border: 1px solid var(--border);
+    color: var(--white);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 12px 14px;
+    border-radius: 8px;
+    outline: none;
+    transition: border-color 0.2s;
+    width: 100%;
+  }
+  .field input:focus { border-color: var(--gold); }
+  .field input::placeholder { color: var(--muted); font-weight: 400; font-size: 14px; }
+
+  /* ── CALCULATE BTN ── */
+  .calc-btn {
+    width: 100%;
+    background: var(--gold);
+    color: var(--navy);
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 700;
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: background 0.2s, transform 0.1s;
+  }
+  .calc-btn:hover { background: var(--gold-light); }
+  .calc-btn:active { transform: scale(0.99); }
+
+  /* ── RESULTS ── */
+  .results {
+    width: 100%;
+    max-width: 780px;
+    margin: 20px 24px 0;
+    display: none;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .results.visible { display: flex; }
+
+  /* Verdict banner */
+  .verdict {
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    border: 1px solid transparent;
+  }
+  .verdict.undervalued { background: rgba(46,204,113,0.1); border-color: rgba(46,204,113,0.3); }
+  .verdict.overvalued  { background: rgba(231,76,60,0.1);  border-color: rgba(231,76,60,0.3); }
+  .verdict.fair        { background: rgba(201,168,76,0.1); border-color: var(--border); }
+
+  .verdict-icon { font-size: 28px; flex-shrink: 0; }
+
+  .verdict-text { flex: 1; }
+  .verdict-title { font-size: 18px; font-weight: 700; margin-bottom: 3px; }
+  .verdict.undervalued .verdict-title { color: var(--green); }
+  .verdict.overvalued .verdict-title  { color: var(--red); }
+  .verdict.fair .verdict-title        { color: var(--gold); }
+  .verdict-desc { font-size: 13px; color: var(--muted); }
+
+  .verdict-pct {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 26px;
+    font-weight: 600;
+    flex-shrink: 0;
+  }
+  .verdict.undervalued .verdict-pct { color: var(--green); }
+  .verdict.overvalued .verdict-pct  { color: var(--red); }
+  .verdict.fair .verdict-pct        { color: var(--gold); }
+
+  /* Gauge */
+  .gauge-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px 20px;
+  }
+
+  .gauge-label {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .gauge-wrap {
+    position: relative;
+    width: 100%;
+    height: 14px;
+    background: var(--navy);
+    border-radius: 7px;
+    overflow: visible;
+    margin-bottom: 8px;
+  }
+
+  .gauge-track {
+    position: absolute;
+    inset: 0;
+    border-radius: 7px;
+    background: linear-gradient(to right, #E74C3C 0%, #E8C97A 50%, #2ECC71 100%);
+    opacity: 0.35;
+  }
+
+  .gauge-needle {
+    position: absolute;
+    top: 50%;
+    width: 3px;
+    height: 26px;
+    background: var(--white);
+    border-radius: 2px;
+    transform: translate(-50%, -50%);
+    transition: left 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow: 0 0 8px rgba(240,244,255,0.5);
+  }
+
+  .gauge-markers {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* Metrics row */
+  .metrics-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .metric {
+    background: var(--navy-mid);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+
+  .metric-label {
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+
+  .metric-value {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--white);
+  }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  /* Scenarios */
+  .scenarios-card {
+    background: var(--navy-mid);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+
+  .scenarios-title {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+
+  .scenarios-bars { display: flex; flex-direction: column; gap: 14px; }
+
+  .scenario-row { display: flex; flex-direction: column; gap: 5px; }
+
+  .scenario-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+  }
+
+  .scenario-name { color: var(--muted); font-weight: 500; }
+  .scenario-val  {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .bar-track {
+    height: 6px;
+    background: var(--navy);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.8s ease;
+  }
+
+  /* Disclaimer */
+  .disclaimer {
+    width: 100%;
+    max-width: 780px;
+    margin: 16px 24px 36px;
+    padding: 14px 20px;
+    background: rgba(122,147,184,0.06);
+    border: 1px solid rgba(122,147,184,0.15);
+    border-radius: 8px;
+    font-size: 11px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .built-by {
+    font-size: 10px;
+    color: rgba(122,147,184,0.5);
+    margin-top: 6px;
+    letter-spacing: 0.5px;
+  }
+  .built-by span { color: var(--gold); opacity: 0.7; }
+
+  /* Responsive */
+  @media (max-width: 520px) {
+    .inputs-grid { grid-template-columns: 1fr; }
+    .metrics-row { grid-template-columns: 1fr 1fr; }
+    .card { padding: 24px 20px; }
+    .brand-title { font-size: 18px; }
+  }
+
+  /* Animation */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .results.visible > * {
+    animation: fadeUp 0.4s ease forwards;
+  }
+  .results.visible > *:nth-child(2) { animation-delay: 0.07s; }
+  .results.visible > *:nth-child(3) { animation-delay: 0.14s; }
+  .results.visible > *:nth-child(4) { animation-delay: 0.21s; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="brand">
+    <span class="brand-label" id="lbl-eyebrow">Equity Analysis Tool</span>
+    <h1 class="brand-title" id="lbl-title">Stock Valuation Simulator</h1>
+    <p class="brand-sub" id="lbl-sub">DCF + P/E Dual-Method Estimate</p>
+  </div>
+  <button class="lang-btn" onclick="toggleLang()" id="lang-toggle">العربية</button>
+</div>
+
+<!-- INPUT CARD -->
+<div class="card">
+  <p class="presets-label" id="lbl-presets">Quick Load — Saudi Market</p>
+  <div class="presets">
+    <button class="preset-btn" onclick="loadPreset('aramco')" id="pre-aramco">أرامكو / Aramco</button>
+    <button class="preset-btn" onclick="loadPreset('stc')"    id="pre-stc">stc</button>
+    <button class="preset-btn" onclick="loadPreset('sabic')"  id="pre-sabic">سابك / SABIC</button>
+    <button class="preset-btn" onclick="loadPreset('rajhi')"  id="pre-rajhi">الراجحي / Al Rajhi</button>
+  </div>
+
+  <div class="inputs-grid">
+    <div class="field">
+      <label id="lbl-eps">EPS (SAR / Share)</label>
+      <span class="field-hint" id="hint-eps">Earnings per share (TTM)</span>
+      <input type="number" id="inp-eps" placeholder="e.g. 2.30" step="0.01" />
+    </div>
+    <div class="field">
+      <label id="lbl-price">Current Price (SAR)</label>
+      <span class="field-hint" id="hint-price">Market price today</span>
+      <input type="number" id="inp-price" placeholder="e.g. 28.50" step="0.1" />
+    </div>
+    <div class="field">
+      <label id="lbl-growth">Growth Rate (%)</label>
+      <span class="field-hint" id="hint-growth">Projected annual EPS growth</span>
+      <input type="number" id="inp-growth" placeholder="e.g. 8" step="0.5" />
+    </div>
+    <div class="field">
+      <label id="lbl-discount">Discount Rate (%)</label>
+      <span class="field-hint" id="hint-discount">Required rate of return (WACC)</span>
+      <input type="number" id="inp-discount" placeholder="e.g. 10" step="0.5" />
+    </div>
+    <div class="field">
+      <label id="lbl-pe">Target P/E</label>
+      <span class="field-hint" id="hint-pe">Industry / historical average</span>
+      <input type="number" id="inp-pe" placeholder="e.g. 15" step="0.5" />
+    </div>
+    <div class="field">
+      <label id="lbl-years">Projection (Years)</label>
+      <span class="field-hint" id="hint-years">DCF horizon</span>
+      <input type="number" id="inp-years" placeholder="e.g. 5" min="1" max="10" step="1" />
+    </div>
+  </div>
+
+  <button class="calc-btn" onclick="calculate()" id="btn-calc">Calculate Fair Value →</button>
+</div>
+
+<!-- RESULTS -->
+<div class="results" id="results">
+
+  <!-- Verdict -->
+  <div class="verdict" id="verdict-box">
+    <div class="verdict-icon" id="verdict-icon">📊</div>
+    <div class="verdict-text">
+      <div class="verdict-title" id="verdict-title">—</div>
+      <div class="verdict-desc" id="verdict-desc">—</div>
+    </div>
+    <div class="verdict-pct" id="verdict-pct">—</div>
+  </div>
+
+  <!-- Gauge -->
+  <div class="gauge-card">
+    <div class="gauge-label" id="lbl-gauge">Valuation Gauge — Upside / Downside vs. Market Price</div>
+    <div class="gauge-wrap">
+      <div class="gauge-track"></div>
+      <div class="gauge-needle" id="gauge-needle" style="left:50%"></div>
+    </div>
+    <div class="gauge-markers">
+      <span id="gm-left">−50%+</span>
+      <span id="gm-mid">FAIR</span>
+      <span id="gm-right">+50%+</span>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics-row">
+    <div class="metric">
+      <div class="metric-label" id="lbl-m1">DCF Value</div>
+      <div class="metric-value" id="val-dcf">—</div>
+      <div class="metric-sub" id="sub-m1">Discounted Cash Flow</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label" id="lbl-m2">P/E Value</div>
+      <div class="metric-value" id="val-pe">—</div>
+      <div class="metric-sub" id="sub-m2">Earnings Multiple</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label" id="lbl-m3">Blended Fair Value</div>
+      <div class="metric-value" id="val-blend">—</div>
+      <div class="metric-sub" id="sub-m3">50% DCF + 50% P/E</div>
+    </div>
+  </div>
+
+  <!-- Scenarios -->
+  <div class="scenarios-card">
+    <div class="scenarios-title" id="lbl-scenarios">Scenario Analysis</div>
+    <div class="scenarios-bars">
+      <div class="scenario-row">
+        <div class="scenario-header">
+          <span class="scenario-name" id="sc-bear-lbl">🐻 Bear Case</span>
+          <span class="scenario-val" id="sc-bear-val" style="color:#E74C3C">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="sc-bear-bar" style="background:#E74C3C;width:0%"></div></div>
+      </div>
+      <div class="scenario-row">
+        <div class="scenario-header">
+          <span class="scenario-name" id="sc-base-lbl">📊 Base Case</span>
+          <span class="scenario-val" id="sc-base-val" style="color:var(--gold)">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="sc-base-bar" style="background:var(--gold);width:0%"></div></div>
+      </div>
+      <div class="scenario-row">
+        <div class="scenario-header">
+          <span class="scenario-name" id="sc-bull-lbl">🐂 Bull Case</span>
+          <span class="scenario-val" id="sc-bull-val" style="color:#2ECC71">—</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="sc-bull-bar" style="background:#2ECC71;width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer" id="disclaimer">
+  <strong>⚠ Educational tool only.</strong> This simulator uses simplified DCF and P/E methodologies for illustrative purposes. It does not constitute financial advice. All inputs are user-provided assumptions — results are highly sensitive to growth and discount rate estimates. Always conduct thorough due diligence before any investment decision.
+  <div class="built-by">Built by <span>Mazen Alghamdi</span> · Finance Student, KFUPM · 2025</div>
+</div>
+
+<script>
+  let lang = 'en';
+
+  const t = {
+    en: {
+      eyebrow: 'Equity Analysis Tool',
+      title: 'Stock Valuation Simulator',
+      sub: 'DCF + P/E Dual-Method Estimate',
+      langBtn: 'العربية',
+      presets: 'Quick Load — Saudi Market',
+      eps: 'EPS (SAR / Share)', hintEps: 'Earnings per share (TTM)',
+      price: 'Current Price (SAR)', hintPrice: 'Market price today',
+      growth: 'Growth Rate (%)', hintGrowth: 'Projected annual EPS growth',
+      discount: 'Discount Rate (%)', hintDiscount: 'Required rate of return (WACC)',
+      pe: 'Target P/E', hintPe: 'Industry / historical average',
+      years: 'Projection (Years)', hintYears: 'DCF horizon',
+      calc: 'Calculate Fair Value →',
+      gauge: 'Valuation Gauge — Upside / Downside vs. Market Price',
+      gmLeft: '−50%+', gmMid: 'FAIR', gmRight: '+50%+',
+      m1: 'DCF Value', sub1: 'Discounted Cash Flow',
+      m2: 'P/E Value', sub2: 'Earnings Multiple',
+      m3: 'Blended Fair Value', sub3: '50% DCF + 50% P/E',
+      scenarios: 'Scenario Analysis',
+      bear: '🐻 Bear Case', base: '📊 Base Case', bull: '🐂 Bull Case',
+      disclaimer: '<strong>⚠ Educational tool only.</strong> This simulator uses simplified DCF and P/E methodologies for illustrative purposes. It does not constitute financial advice. All inputs are user-provided assumptions — results are highly sensitive to growth and discount rate estimates. Always conduct thorough due diligence before any investment decision.',
+      built: 'Built by',
+      undervalued: 'Undervalued', overvalued: 'Overvalued', fair: 'Fairly Valued',
+      uDesc: 'Stock appears to trade below estimated intrinsic value.',
+      oDesc: 'Stock appears to trade above estimated intrinsic value.',
+      fDesc: 'Stock appears fairly valued based on inputs provided.',
+      epsPlaceholder: 'e.g. 2.30', pricePlaceholder: 'e.g. 28.50',
+      growthPlaceholder: 'e.g. 8', discountPlaceholder: 'e.g. 10',
+      pePlaceholder: 'e.g. 15', yearsPlaceholder: 'e.g. 5',
+    },
+    ar: {
+      eyebrow: 'أداة تحليل الأسهم',
+      title: 'محاكي تقييم الأسهم',
+      sub: 'تقدير ثنائي: DCF + مضاعف الأرباح',
+      langBtn: 'English',
+      presets: 'تحميل سريع — السوق السعودي',
+      eps: 'ربحية السهم (ريال)', hintEps: 'العائد للسهم (آخر 12 شهر)',
+      price: 'السعر الحالي (ريال)', hintPrice: 'سعر السوق اليوم',
+      growth: 'معدل النمو (%)', hintGrowth: 'نمو الأرباح السنوي المتوقع',
+      discount: 'معدل الخصم (%)', hintDiscount: 'معدل العائد المطلوب (WACC)',
+      pe: 'المضاعف المستهدف P/E', hintPe: 'متوسط القطاع / التاريخي',
+      years: 'سنوات التقييم', hintYears: 'أفق نموذج التدفقات النقدية',
+      calc: '← احسب القيمة العادلة',
+      gauge: 'مقياس التقييم — الفرصة / المخاطرة نسبةً للسعر الحالي',
+      gmLeft: '−٥٠%+', gmMid: 'عادل', gmRight: '+٥٠%+',
+      m1: 'قيمة DCF', sub1: 'التدفق النقدي المخصوم',
+      m2: 'قيمة P/E', sub2: 'مضاعف الأرباح',
+      m3: 'القيمة العادلة المركّبة', sub3: '٥٠٪ DCF + ٥٠٪ P/E',
+      scenarios: 'تحليل السيناريوهات',
+      bear: '🐻 السيناريو المتشائم', base: '📊 السيناريو الأساسي', bull: '🐂 السيناريو المتفائل',
+      disclaimer: '<strong>⚠ للأغراض التعليمية فقط.</strong> تستخدم هذه الأداة نماذج مبسّطة للـ DCF ومضاعف الأرباح للتوضيح والتعلّم. لا تُعدّ نصيحة استثمارية. النتائج حساسة جداً للافتراضات المُدخلة. استشر مختصاً قبل أي قرار استثماري.',
+      built: 'أعده',
+      undervalued: 'أقل من قيمته', overvalued: 'أعلى من قيمته', fair: 'مُقيَّم بشكل عادل',
+      uDesc: 'يبدو أن السهم يُتداول دون القيمة الجوهرية المُقدَّرة.',
+      oDesc: 'يبدو أن السهم يُتداول فوق القيمة الجوهرية المُقدَّرة.',
+      fDesc: 'يبدو أن السهم مُقيَّم بشكل عادل بناءً على المعطيات.',
+      epsPlaceholder: 'مثال: 2.30', pricePlaceholder: 'مثال: 28.50',
+      growthPlaceholder: 'مثال: 8', discountPlaceholder: 'مثال: 10',
+      pePlaceholder: 'مثال: 15', yearsPlaceholder: 'مثال: 5',
+    }
+  };
+
+  const presets = {
+    aramco: { eps: 1.62, price: 27.30, growth: 5,  discount: 9,  pe: 16, years: 5 },
+    stc:    { eps: 4.85, price: 97.00, growth: 7,  discount: 10, pe: 20, years: 5 },
+    sabic:  { eps: 1.10, price: 74.00, growth: 6,  discount: 9,  pe: 18, years: 5 },
+    rajhi:  { eps: 7.20, price: 91.00, growth: 9,  discount: 11, pe: 12, years: 5 },
+  };
+
+  function loadPreset(name) {
+    const p = presets[name];
+    document.getElementById('inp-eps').value      = p.eps;
+    document.getElementById('inp-price').value    = p.price;
+    document.getElementById('inp-growth').value   = p.growth;
+    document.getElementById('inp-discount').value = p.discount;
+    document.getElementById('inp-pe').value       = p.pe;
+    document.getElementById('inp-years').value    = p.years;
+    document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+    event.target.classList.add('active');
+  }
+
+  function toggleLang() {
+    lang = lang === 'en' ? 'ar' : 'en';
+    document.documentElement.setAttribute('dir', lang === 'ar' ? 'rtl' : 'ltr');
+    document.documentElement.setAttribute('lang', lang);
+    applyLang();
+  }
+
+  function applyLang() {
+    const tx = t[lang];
+    document.getElementById('lbl-eyebrow').textContent    = tx.eyebrow;
+    document.getElementById('lbl-title').textContent      = tx.title;
+    document.getElementById('lbl-sub').textContent        = tx.sub;
+    document.getElementById('lang-toggle').textContent    = tx.langBtn;
+    document.getElementById('lbl-presets').textContent    = tx.presets;
+    document.getElementById('lbl-eps').textContent        = tx.eps;
+    document.getElementById('hint-eps').textContent       = tx.hintEps;
+    document.getElementById('lbl-price').textContent      = tx.price;
+    document.getElementById('hint-price').textContent     = tx.hintPrice;
+    document.getElementById('lbl-growth').textContent     = tx.growth;
+    document.getElementById('hint-growth').textContent    = tx.hintGrowth;
+    document.getElementById('lbl-discount').textContent   = tx.discount;
+    document.getElementById('hint-discount').textContent  = tx.hintDiscount;
+    document.getElementById('lbl-pe').textContent         = tx.pe;
+    document.getElementById('hint-pe').textContent        = tx.hintPe;
+    document.getElementById('lbl-years').textContent      = tx.years;
+    document.getElementById('hint-years').textContent     = tx.hintYears;
+    document.getElementById('btn-calc').textContent       = tx.calc;
+    document.getElementById('lbl-gauge').textContent      = tx.gauge;
+    document.getElementById('gm-left').textContent        = tx.gmLeft;
+    document.getElementById('gm-mid').textContent         = tx.gmMid;
+    document.getElementById('gm-right').textContent       = tx.gmRight;
+    document.getElementById('lbl-m1').textContent         = tx.m1;
+    document.getElementById('sub-m1').textContent         = tx.sub1;
+    document.getElementById('lbl-m2').textContent         = tx.m2;
+    document.getElementById('sub-m2').textContent         = tx.sub2;
+    document.getElementById('lbl-m3').textContent         = tx.m3;
+    document.getElementById('sub-m3').textContent         = tx.sub3;
+    document.getElementById('lbl-scenarios').textContent  = tx.scenarios;
+    document.getElementById('sc-bear-lbl').textContent    = tx.bear;
+    document.getElementById('sc-base-lbl').textContent    = tx.base;
+    document.getElementById('sc-bull-lbl').textContent    = tx.bull;
+    document.getElementById('inp-eps').placeholder        = tx.epsPlaceholder;
+    document.getElementById('inp-price').placeholder      = tx.pricePlaceholder;
+    document.getElementById('inp-growth').placeholder     = tx.growthPlaceholder;
+    document.getElementById('inp-discount').placeholder   = tx.discountPlaceholder;
+    document.getElementById('inp-pe').placeholder         = tx.pePlaceholder;
+    document.getElementById('inp-years').placeholder      = tx.yearsPlaceholder;
+    const disc = document.getElementById('disclaimer');
+    disc.innerHTML = tx.disclaimer + `<div class="built-by">${tx.built} <span>Mazen Alghamdi</span> · Finance Student, KFUPM · 2025</div>`;
+  }
+
+  function dcfValue(eps, g, r, n) {
+    // Gordon-Growth style: PV of growing EPS stream + terminal value
+    let pv = 0;
+    const gDec = g / 100;
+    const rDec = r / 100;
+    for (let i = 1; i <= n; i++) {
+      pv += (eps * Math.pow(1 + gDec, i)) / Math.pow(1 + rDec, i);
+    }
+    // Terminal value at end of horizon (perpetuity with half-rate growth)
+    const termG = gDec / 2;
+    const termEps = eps * Math.pow(1 + gDec, n);
+    if (rDec > termG) {
+      pv += (termEps * (1 + termG)) / ((rDec - termG) * Math.pow(1 + rDec, n));
+    }
+    return pv;
+  }
+
+  function calculate() {
+    const eps      = parseFloat(document.getElementById('inp-eps').value);
+    const price    = parseFloat(document.getElementById('inp-price').value);
+    const growth   = parseFloat(document.getElementById('inp-growth').value);
+    const discount = parseFloat(document.getElementById('inp-discount').value);
+    const pe       = parseFloat(document.getElementById('inp-pe').value);
+    const years    = parseInt(document.getElementById('inp-years').value) || 5;
+
+    if ([eps, price, growth, discount, pe].some(isNaN) || price <= 0) {
+      alert(lang === 'ar' ? 'يرجى ملء جميع الحقول بقيم صحيحة.' : 'Please fill all fields with valid numbers.');
+      return;
+    }
+
+    // Base case
+    const dcf   = dcfValue(eps, growth, discount, years);
+    const peVal = eps * pe;
+    const blend = (dcf + peVal) / 2;
+
+    // Scenarios
+    const bearBlend = (dcfValue(eps, growth * 0.5, discount * 1.1, years) + eps * (pe * 0.85)) / 2;
+    const bullBlend = (dcfValue(eps, growth * 1.5, discount * 0.9, years) + eps * (pe * 1.15)) / 2;
+
+    const upside = ((blend - price) / price) * 100;
+
+    // Verdict
+    const vBox = document.getElementById('verdict-box');
+    const tx   = t[lang];
+    vBox.className = 'verdict';
+    let vTitle, vDesc, icon;
+    if (upside > 10) {
+      vBox.classList.add('undervalued');
+      vTitle = tx.undervalued; vDesc = tx.uDesc; icon = '📈';
+    } else if (upside < -10) {
+      vBox.classList.add('overvalued');
+      vTitle = tx.overvalued; vDesc = tx.oDesc; icon = '📉';
+    } else {
+      vBox.classList.add('fair');
+      vTitle = tx.fair; vDesc = tx.fDesc; icon = '⚖️';
+    }
+
+    document.getElementById('verdict-icon').textContent = icon;
+    document.getElementById('verdict-title').textContent = vTitle;
+    document.getElementById('verdict-desc').textContent = vDesc;
+    const sign = upside >= 0 ? '+' : '';
+    document.getElementById('verdict-pct').textContent = `${sign}${upside.toFixed(1)}%`;
+
+    // Gauge needle: map upside from [-60,+60] → [5%, 95%]
+    const gaugePos = Math.min(Math.max(((upside + 60) / 120) * 100, 5), 95);
+    document.getElementById('gauge-needle').style.left = gaugePos + '%';
+
+    // Metrics
+    document.getElementById('val-dcf').textContent   = 'SAR ' + dcf.toFixed(2);
+    document.getElementById('val-pe').textContent    = 'SAR ' + peVal.toFixed(2);
+    document.getElementById('val-blend').textContent = 'SAR ' + blend.toFixed(2);
+
+    // Scenarios bars
+    const maxBar = Math.max(bearBlend, blend, bullBlend, price) * 1.1;
+    document.getElementById('sc-bear-val').textContent = 'SAR ' + bearBlend.toFixed(2);
+    document.getElementById('sc-base-val').textContent = 'SAR ' + blend.toFixed(2);
+    document.getElementById('sc-bull-val').textContent = 'SAR ' + bullBlend.toFixed(2);
+    document.getElementById('sc-bear-bar').style.width = (bearBlend / maxBar * 100) + '%';
+    document.getElementById('sc-base-bar').style.width = (blend / maxBar * 100) + '%';
+    document.getElementById('sc-bull-bar').style.width = (bullBlend / maxBar * 100) + '%';
+
+    // Show results
+    const results = document.getElementById('results');
+    results.classList.add('visible');
+    setTimeout(() => results.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+  }
+</script>
+</body>
+</html>
